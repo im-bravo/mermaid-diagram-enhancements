@@ -1,6 +1,6 @@
 {
   "name": "mermaid-diagram-pan-zoom",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Framework-agnostic SDK for Mermaid diagram enhancements: pan/zoom, fullscreen, copy, zoom controls",
   "main": "src/index.js",
   "type": "module",
@@ -26,6 +26,11 @@
     "vitepress"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/im-bravo/mermaid-diagram-enhancements.git",
+    "directory": "mermaid-diagram-pan-zoom"
+  },
   "scripts": {
     "build": "echo 'No build step — ships source directly'",
     "test": "echo 'No tests yet'",
