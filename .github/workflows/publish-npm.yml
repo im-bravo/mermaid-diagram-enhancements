@@ -1,0 +1,47 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies (SDK)
+        run: npm install
+        working-directory: mermaid-diagram-pan-zoom
+
+      - name: Publish mermaid-diagram-pan-zoom
+        run: npm publish --provenance --access public
+        working-directory: mermaid-diagram-pan-zoom
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Set plugin dependency to SDK version
+        run: |
+          SDK_VERSION=$(node -p "require('./mermaid-diagram-pan-zoom/package.json').version")
+          cd docusaurus-plugin-mermaid-pan-zoom
+          npm pkg set "dependencies.mermaid-diagram-pan-zoom=^${SDK_VERSION}"
+
+      - name: Install dependencies (plugin)
+        run: npm install
+        working-directory: docusaurus-plugin-mermaid-pan-zoom
+
+      - name: Publish docusaurus-plugin-mermaid-pan-zoom
+        run: npm publish --provenance --access public
+        working-directory: docusaurus-plugin-mermaid-pan-zoom
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
