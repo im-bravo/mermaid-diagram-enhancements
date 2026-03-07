@@ -2,6 +2,6 @@
   "name": "mermaid-pan-zoom-workspace",
   "private": true,
   "scripts": {
-    "prepare-publish": "node scripts/prepare-publish.js"
+    "prepare": "node scripts/prepare-publish.js"
   }
 }
