@@ -1,0 +1,37 @@
+{
+  "name": "mermaid-diagram-pan-zoom",
+  "version": "1.0.0",
+  "description": "Framework-agnostic SDK for Mermaid diagram enhancements: pan/zoom, fullscreen, copy, zoom controls",
+  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./styles/mermaid-enhancements.css": "./styles/mermaid-enhancements.css"
+  },
+  "files": [
+    "src",
+    "styles",
+    "README.md"
+  ],
+  "dependencies": {
+    "svg-pan-zoom": "^3.6.2"
+  },
+  "keywords": [
+    "mermaid",
+    "diagram",
+    "pan",
+    "zoom",
+    "fullscreen",
+    "docusaurus",
+    "vitepress"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "echo 'No build step — ships source directly'",
+    "test": "echo 'No tests yet'",
+    "prepublishOnly": "npm run build && npm run pack:dry-run",
+    "pack": "npm pack",
+    "pack:dry-run": "npm pack --dry-run",
+    "publish:dry-run": "npm publish --dry-run"
+  }
+}
