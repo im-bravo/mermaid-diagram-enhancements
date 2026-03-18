@@ -15,15 +15,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
 
-      - name: Install dependencies (SDK)
-        run: npm install
-        working-directory: mermaid-diagram-pan-zoom
+      - name: Extract version from tag
+        id: tag_version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Replace workspace:* with real versions for publishing
+        run: node scripts/prepare-publish.js ${{ steps.tag_version.outputs.version }}
 
       - name: Publish mermaid-diagram-pan-zoom
         run: npm publish --provenance --access public
@@ -31,13 +47,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Set plugin dependency to SDK version
-        run: |
-          SDK_VERSION=$(node -p "require('./mermaid-diagram-pan-zoom/package.json').version")
-          cd docusaurus-plugin-mermaid-pan-zoom
-          npm pkg set "dependencies.mermaid-diagram-pan-zoom=^${SDK_VERSION}"
-
-      - name: Install dependencies (plugin)
+      - name: Install plugin dependencies (with real SDK version)
         run: npm install
         working-directory: docusaurus-plugin-mermaid-pan-zoom
 

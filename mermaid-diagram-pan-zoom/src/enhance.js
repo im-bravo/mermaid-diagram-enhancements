@@ -43,6 +43,50 @@ async function getSvgPanZoom() {
   return svgPanZoomLib;
 }
 
+function resetContainer(container) {
+  container.removeAttribute(ENHANCED_ATTR);
+  container.classList.remove(ENHANCED_CLASS);
+  container.querySelectorAll(
+    '.mermaid-copy-btn, .mermaid-expand-btn, .mermaid-zoom-controls'
+  ).forEach((el) => el.remove());
+
+  const svg = container.querySelector(':scope > svg');
+  if (svg?._mermaidPanZoom) {
+    try { svg._mermaidPanZoom.destroy(); } catch (_) {}
+    svg._mermaidPanZoom = null;
+  }
+  if (container._mermaidWheelZoom) {
+    container.removeEventListener('wheel', container._mermaidWheelZoom, { capture: true });
+    container._mermaidWheelZoom = null;
+  }
+  container.style.removeProperty('height');
+  container.style.removeProperty('overflow');
+}
+
+function applyEnhancements(container, svg, opts) {
+  initPanZoom(container, svg, opts);
+  if (opts.enableCopy) addCopyButton(container, opts);
+  if (opts.enableExpand) addExpandButton(container, svg, opts);
+  if (opts.enableZoomControls) addZoomControls(container, svg);
+  if (opts.enableInlineWheelZoom) addWheelZoomHandler(container, svg);
+  container.setAttribute(ENHANCED_ATTR, 'true');
+  container.classList.add(ENHANCED_CLASS);
+
+  // Watch for SVG replacement (e.g. Mermaid re-renders on theme change).
+  // When the SVG child changes, reset and re-enhance.
+  if (!container._mermaidSvgObserver) {
+    const svgObserver = new MutationObserver(() => {
+      const newSvg = container.querySelector(':scope > svg');
+      if (newSvg && !newSvg._mermaidPanZoom) {
+        resetContainer(container);
+        applyEnhancements(container, newSvg, opts);
+      }
+    });
+    svgObserver.observe(container, { childList: true });
+    container._mermaidSvgObserver = svgObserver;
+  }
+}
+
 function enhanceContainer(container, options) {
   if (container.getAttribute(ENHANCED_ATTR) === 'true') return;
 
@@ -55,36 +99,39 @@ function enhanceContainer(container, options) {
       const s = container.querySelector(':scope > svg');
       if (s) {
         obs.disconnect();
-        initPanZoom(container, s, opts);
-        if (opts.enableCopy) addCopyButton(container, opts);
-        if (opts.enableExpand) addExpandButton(container, s, opts);
-        if (opts.enableZoomControls) addZoomControls(container, s);
-        if (opts.enableWheelZoom) addWheelZoomHandler(container, s);
-        container.setAttribute(ENHANCED_ATTR, 'true');
-        container.classList.add(ENHANCED_CLASS);
+        applyEnhancements(container, s, opts);
       }
     });
     observer.observe(container, { childList: true, subtree: true });
     return;
   }
 
-  initPanZoom(container, svg, opts);
-  if (opts.enableCopy) addCopyButton(container, opts);
-  if (opts.enableExpand) addExpandButton(container, svg, opts);
-  if (opts.enableZoomControls) addZoomControls(container, svg);
-  if (opts.enableWheelZoom) addWheelZoomHandler(container, svg);
-  container.setAttribute(ENHANCED_ATTR, 'true');
-  container.classList.add(ENHANCED_CLASS);
+  applyEnhancements(container, svg, opts);
 }
 
 function initPanZoom(container, svg, options) {
   if (svg._mermaidPanZoom) return;
 
-  const viewBox = svg.getAttribute('viewBox');
-  if (viewBox) {
-    const parts = viewBox.split(/[\s,]+/).map(parseFloat);
-    if (parts.length >= 4 && parts[2] && parts[3]) {
-      svg.style.aspectRatio = `${parts[2]} / ${parts[3]}`;
+  svg.style.removeProperty('max-width');
+  svg.style.removeProperty('height');
+  svg.style.setProperty('width', '100%', 'important');
+  svg.style.setProperty('max-width', '100%', 'important');
+
+  // Give the container a fixed viewport height so svg-pan-zoom has a
+  // well-defined area to fit/center content in.  Small diagrams stay at
+  // natural size (zoom capped at 1 below), tall diagrams are scaled down.
+  // Set to null/undefined to fall back to natural aspect-ratio sizing.
+  if (options.containerHeight) {
+    container.style.height = options.containerHeight;
+    container.style.overflow = 'hidden';
+    svg.style.setProperty('height', '100%', 'important');
+  } else {
+    const viewBox = svg.getAttribute('viewBox');
+    if (viewBox) {
+      const parts = viewBox.split(/[\s,]+/).map(parseFloat);
+      if (parts.length >= 4 && parts[2] && parts[3]) {
+        svg.style.aspectRatio = `${parts[2]} / ${parts[3]}`;
+      }
     }
   }
 
@@ -95,6 +142,15 @@ function initPanZoom(container, svg, options) {
       try {
         const instance = svgPanZoom(svg, panZoomOptions);
         svg._mermaidPanZoom = instance;
+
+        // Prevent small diagrams from being scaled up beyond their natural size.
+        // fit:true makes svg-pan-zoom scale content to fill the viewport — for
+        // small diagrams this means enlarging them. Cap the initial zoom at 1
+        // so they stay at natural size, centered in the wider container.
+        if (instance.getZoom() > 1) {
+          instance.zoom(1);
+          instance.center();
+        }
       } catch (e) {
         console.warn('[mermaid-diagram-pan-zoom] svg-pan-zoom init failed:', e);
       }
@@ -446,6 +502,16 @@ export function destroy() {
   if (intersectionObserver) {
     intersectionObserver.disconnect();
     intersectionObserver = null;
+  }
+
+  // Clean up per-container SVG observers
+  if (currentOptions) {
+    document.querySelectorAll(`[${ENHANCED_ATTR}="true"]`).forEach((container) => {
+      if (container._mermaidSvgObserver) {
+        container._mermaidSvgObserver.disconnect();
+        container._mermaidSvgObserver = null;
+      }
+    });
   }
 
   currentOptions = null;

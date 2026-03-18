@@ -30,7 +30,8 @@ init({
   enableCopy: true,
   enableExpand: true,
   enableZoomControls: true,
-  enableWheelZoom: true,
+  enableWheelZoom: true,         // wheel zoom in popup modal
+  enableInlineWheelZoom: false,  // wheel zoom on inline diagrams (disabled by default)
 });
 
 // Call enhance() when DOM changes (e.g. SPA route change)
@@ -50,7 +51,8 @@ Initializes the SDK. Options are merged with defaults.
 | `enableCopy` | `true` | Show copy button |
 | `enableExpand` | `true` | Show fullscreen button |
 | `enableZoomControls` | `true` | Show pan/zoom control grid |
-| `enableWheelZoom` | `true` | Enable mouse wheel zoom |
+| `enableWheelZoom` | `true` | Enable mouse wheel zoom in the popup modal |
+| `enableInlineWheelZoom` | `false` | Enable mouse wheel zoom on inline (non-modal) diagrams |
 | `panZoomOptions` | `{...}` | Options passed to svg-pan-zoom |
 
 ### `enhance()`

@@ -2,6 +2,14 @@
   "name": "mermaid-pan-zoom-workspace",
   "private": true,
   "scripts": {
-    "prepare": "node scripts/prepare-publish.js"
+    "version:patch": "node scripts/prepare-publish.js patch",
+    "version:minor": "node scripts/prepare-publish.js minor",
+    "version:major": "node scripts/prepare-publish.js major",
+    "version:restore": "node scripts/prepare-publish.js --restore"
+  },
+  "pnpm": {
+    "overrides": {
+      "mermaid-diagram-pan-zoom": "workspace:*"
+    }
   }
 }
