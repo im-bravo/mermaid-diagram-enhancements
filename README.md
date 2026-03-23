@@ -1,213 +1,86 @@
-# Packages
+# Mermaid Diagram Enhancements
 
-Publishable npm packages for Mermaid diagram pan/zoom functionality.
+Add practical interaction features to Mermaid diagrams: pan, wheel zoom, fullscreen view, source copy, and zoom controls.
 
-## Packages
+This repository provides two publishable packages:
 
-| Package | Description |
-|---------|-------------|
-| [mermaid-diagram-pan-zoom](./mermaid-diagram-pan-zoom) | Framework-agnostic SDK: pan/zoom, fullscreen, copy, zoom controls for Mermaid diagrams |
-| [docusaurus-plugin-mermaid-pan-zoom](./docusaurus-plugin-mermaid-pan-zoom) | Zero-config Docusaurus plugin that wires the SDK into Docusaurus |
+- [`docusaurus-plugin-mermaid-pan-zoom`](./docusaurus-plugin-mermaid-pan-zoom): Recommended for Docusaurus users, zero-config setup.
+- [`mermaid-diagram-pan-zoom`](./mermaid-diagram-pan-zoom): Framework-agnostic SDK for VitePress or custom integrations.
 
-## Relationship
+## Which One Should You Use
 
-```
-mermaid-diagram-pan-zoom (SDK)
-        ↑
-        │ depends on
-        │
-docusaurus-plugin-mermaid-pan-zoom (Docusaurus integration)
-```
+- If you use Docusaurus: use `docusaurus-plugin-mermaid-pan-zoom`
+- If you are not on Docusaurus, or you want manual control: use `mermaid-diagram-pan-zoom`
 
-- **mermaid-diagram-pan-zoom** — Use directly in any project (VitePress, custom sites, etc.)
-- **docusaurus-plugin-mermaid-pan-zoom** — Use in Docusaurus; it depends on the SDK and configures it automatically
+## Quick Start
 
-## Local development
+### Option 1: Docusaurus Plugin (Recommended)
 
-From this directory or the workspace root:
+1. Install:
 
 ```bash
-pnpm install
+pnpm add docusaurus-plugin-mermaid-pan-zoom mermaid-diagram-pan-zoom
 ```
 
-## Publishing to npm
+2. Enable it in `docusaurus.config.js`:
 
-Publishing is automated via GitHub Actions. Push a version tag to trigger:
+```js
+module.exports = {
+  themes: ['@docusaurus/theme-mermaid'],
+  plugins: ['docusaurus-plugin-mermaid-pan-zoom'],
+  markdown: {
+    mermaid: true,
+  },
+};
+```
+
+### Option 2: Generic SDK
 
 ```bash
-# 1. Bump version in both package.json files, then:
-git add .
-git commit -m "chore: release v1.0.1"
-git tag v1.0.1
-git push origin main --tags
+pnpm add mermaid-diagram-pan-zoom svg-pan-zoom
 ```
 
-**Setup required:**
-1. Create an [npm access token](https://www.npmjs.com/settings/~/tokens) (Automation type).
-2. Add it as a GitHub secret: **Settings → Secrets and variables → Actions → New repository secret** → Name: `NPM_TOKEN`, Value: your token.
+```js
+import { init, enhance } from 'mermaid-diagram-pan-zoom';
+import 'mermaid-diagram-pan-zoom/styles/mermaid-enhancements.css';
 
-**Note:** If your repo has packages at the root (not in `packages/`), update the `working-directory` paths in `.github/workflows/publish-npm.yml`.
+init({
+  containerSelector: '.docusaurus-mermaid-container',
+  enableCopy: true,
+  enableExpand: true,
+  enableZoomControls: true,
+  enableWheelZoom: true,
+});
 
-To use in flat35-docs, the packages are linked via `file:` dependencies.
-
-## Publishing to npm
-
-Publishing is automated via GitHub Actions when you push a version tag.
-
-### Setup (one-time)
-
-1. **Create an npm access token** at [npmjs.com/settings/tokens](https://www.npmjs.com/settings/tokens) (Automation type).
-2. **Add the token as a GitHub secret**: Repo → Settings → Secrets and variables → Actions → New repository secret → Name: `NPM_TOKEN`, Value: your token.
-
-### Release flow
-
-1. Bump version in both `package.json` files (e.g. `1.0.0` → `1.0.1`).
-2. Commit and push.
-3. Create and push a tag: `git tag v1.0.1 && git push origin v1.0.1`
-4. The workflow publishes both packages to npm.
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in `.github/workflows/publish-npm.yml`.
-
-## Publishing to npm
-
-Publishing is automated via GitHub Actions. When you push a version tag (e.g. `v1.0.1`), both packages are published to npm.
-
-### Setup
-
-1. **Create an npm token** at [npmjs.com](https://www.npmjs.com/) → Account → Access Tokens → Generate New Token (Automation type).
-
-2. **Add the token as a GitHub secret** in your repo: Settings → Secrets and variables → Actions → New repository secret. Name it `NPM_TOKEN`.
-
-### Release flow
-
-1. Bump version in both `package.json` files.
-2. Commit and push.
-3. Create and push a tag:
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-4. The workflow (`.github/workflows/publish-npm.yml`) runs and publishes both packages.
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in the workflow.
-
-To use in flat35-docs, the packages are linked via `file:` dependencies.
-
-## Publishing to npm
-
-Auto-publish runs when you push a version tag (e.g. `v1.0.0`).
-
-### Setup (one-time)
-
-1. Create an [npm access token](https://www.npmjs.com/settings/~/tokens) (Automation type).
-2. Add it as a GitHub secret: **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `NPM_TOKEN`
-   - Value: your npm token
-
-### Release flow
-
-1. Bump version in both `package.json` files.
-2. Commit and push.
-3. Create and push a tag:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-4. The workflow publishes both packages to npm.
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in [.github/workflows/publish-npm.yml](../.github/workflows/publish-npm.yml).
-## Publishing to npm
-
-Publishing is automated via GitHub Actions. Push a version tag to trigger:
-
-```bash
-# 1. Bump version in both package.json files (e.g. 1.0.0 → 1.0.1)
-# 2. Commit the changes
-git add packages/*/package.json && git commit -m "chore: bump to 1.0.1"
-
-# 3. Create and push tag (use same version as package.json)
-git tag v1.0.1
-git push origin main --tags
+enhance();
 ```
 
-### Setup required
+## Core Features
 
-1. **npm token**: Create an [npm access token](https://www.npmjs.com/settings/~/tokens) (Automation type).
-2. **GitHub secret**: In your repo → Settings → Secrets and variables → Actions, add `NPM_TOKEN` with the token value.
-3. **Workflow location**: The workflow is at `.github/workflows/publish-npm.yml`. If your repo has packages at root (no `packages/` folder), update the `working-directory` paths in the workflow.
+- Pan and zoom interactions
+- Fullscreen modal for large diagrams
+- One-click copy for Mermaid source
+- Zoom control panel
+- Auto-enhancement after route changes (plugin scenario)
 
-To use in flat35-docs, the packages are linked via `file:` dependencies.
+## Common Configuration
 
-## Publishing to npm
+Common options (see SDK README for full details):
 
-Publishing is automated via GitHub Actions when you push a version tag.
+- `containerSelector`: Mermaid container selector
+- `sourceAttribute`: attribute containing Mermaid source for copy
+- `enableCopy`: show or hide copy button
+- `enableExpand`: show or hide fullscreen button
+- `enableZoomControls`: show or hide zoom controls
+- `enableWheelZoom`: enable or disable wheel zoom
+- `wheelZoomRequiresCtrl`: require `Ctrl` key for wheel zoom
 
-### Setup (one-time)
+## Documentation
 
-1. **Create an npm access token** at [npmjs.com/settings/tokens](https://www.npmjs.com/settings/tokens) (Automation type for CI).
+- SDK docs: [`mermaid-diagram-pan-zoom/README.md`](./mermaid-diagram-pan-zoom/README.md)
+- Docusaurus plugin docs: [`docusaurus-plugin-mermaid-pan-zoom/README.md`](./docusaurus-plugin-mermaid-pan-zoom/README.md)
+- Developer docs: [`DEVELOPERS.md`](./DEVELOPERS.md)
 
-2. **Add the token as a GitHub secret**: Repo → Settings → Secrets and variables → Actions → New repository secret:
-   - Name: `NPM_TOKEN`
-   - Value: your npm token
+## License
 
-### Release flow
-
-1. Bump version in both `package.json` files (e.g. `1.0.0` → `1.0.1`).
-2. Commit and push.
-3. Create and push a tag:
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-4. The workflow publishes both packages to npm in order (SDK first, then plugin).
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in [.github/workflows/publish-npm.yml](../.github/workflows/publish-npm.yml).
-
-## Publishing to npm
-
-Publishing is automated via GitHub Actions when you push a version tag.
-
-### Setup (one-time)
-
-1. **Create an npm access token** at [npmjs.com/settings/tokens](https://www.npmjs.com/settings/tokens) (Automation type for CI).
-
-2. **Add the token as a GitHub secret** in your repo: **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `NPM_TOKEN`
-   - Value: your npm token
-
-### Release flow
-
-1. Bump version in both `package.json` files (e.g. `1.0.0` → `1.0.1`).
-2. Commit and push.
-3. Create and push a tag:
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-4. The workflow (`.github/workflows/publish-npm.yml`) runs and publishes both packages to npm.
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in the workflow.
-
-## Publishing to npm
-
-Publishing is automated via GitHub Actions when you push a version tag.
-
-### Setup (one-time)
-
-1. Create an [npm access token](https://www.npmjs.com/settings/~/tokens) (Automation type).
-2. Add it as a GitHub secret: **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `NPM_TOKEN`
-   - Value: your npm token
-
-### Release flow
-
-1. Bump version in both `package.json` files (e.g. `1.0.0` → `1.0.1`).
-2. Commit and push.
-3. Create and push a tag:
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-4. The workflow (`.github/workflows/publish-npm.yml`) runs and publishes both packages to npm.
-
-**Note:** If your repo has packages at the root (no `packages/` folder), update the `working-directory` paths in the workflow.
+MIT
