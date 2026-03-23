@@ -90,8 +90,8 @@ main() {
     echo
   else
     echo -e "Enter next version or bump type:"
-    echo -e "  • ${YELLOW}patch${NC}      - Bump patch version (${CURRENT_VERSION:0:-1}x)"
-    echo -e "  • ${YELLOW}minor${NC}      - Bump minor version (x.${CURRENT_VERSION:2}.0)"
+    echo -e "  • ${YELLOW}patch${NC}      - Bump patch version ($(echo ${CURRENT_VERSION} | rev | cut -c2- | rev)x)"
+    echo -e "  • ${YELLOW}minor${NC}      - Bump minor version (x.y.0)"
     echo -e "  • ${YELLOW}major${NC}      - Bump major version (x.0.0)"
     echo -e "  • ${YELLOW}x.y.z${NC}      - Specific version (e.g., 1.2.3)"
     echo
