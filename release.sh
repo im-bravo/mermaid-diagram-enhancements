@@ -83,19 +83,26 @@ main() {
   log_success "Git state clean"
   echo
 
-  # 3. Prompt for next version
-  echo -e "Enter next version or bump type:"
-  echo -e "  • ${YELLOW}patch${NC}      - Bump patch version (${CURRENT_VERSION:0:-1}x)"
-  echo -e "  • ${YELLOW}minor${NC}      - Bump minor version (x.${CURRENT_VERSION:2}.0)"
-  echo -e "  • ${YELLOW}major${NC}      - Bump major version (x.0.0)"
-  echo -e "  • ${YELLOW}x.y.z${NC}      - Specific version (e.g., 1.2.3)"
-  echo
+  # 3. Get next version (from param or prompt)
+  if [[ -n "$1" ]]; then
+    VERSION_INPUT="$1"
+    log_info "Version input: ${YELLOW}${VERSION_INPUT}${NC} (from argument)"
+    echo
+  else
+    echo -e "Enter next version or bump type:"
+    echo -e "  • ${YELLOW}patch${NC}      - Bump patch version (${CURRENT_VERSION:0:-1}x)"
+    echo -e "  • ${YELLOW}minor${NC}      - Bump minor version (x.${CURRENT_VERSION:2}.0)"
+    echo -e "  • ${YELLOW}major${NC}      - Bump major version (x.0.0)"
+    echo -e "  • ${YELLOW}x.y.z${NC}      - Specific version (e.g., 1.2.3)"
+    echo
 
-  read -p "Version or bump type: " VERSION_INPUT
+    read -p "Version or bump type: " VERSION_INPUT
 
-  if [[ -z "$VERSION_INPUT" ]]; then
-    log_error "Version input cannot be empty"
-    exit 1
+    if [[ -z "$VERSION_INPUT" ]]; then
+      log_error "Version input cannot be empty"
+      exit 1
+    fi
+    echo
   fi
 
   # Validate input
