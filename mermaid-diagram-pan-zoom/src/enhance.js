@@ -122,6 +122,9 @@ function resetContainer(container) {
   }
   container.style.removeProperty('height');
   container.style.removeProperty('overflow');
+  container.style.removeProperty('width');
+  container.style.removeProperty('max-width');
+  container.style.removeProperty('margin-inline');
 }
 
 function applyEnhancements(container, svg, opts) {
@@ -170,13 +173,86 @@ function enhanceContainer(container, options) {
   applyEnhancements(container, svg, opts);
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseNumber(value) {
+  if (value === null || value === undefined) return null;
+  const n = Number.parseFloat(String(value));
+  return Number.isFinite(n) ? n : null;
+}
+
+function getSvgIntrinsicSize(svg) {
+  const viewBox = svg.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.split(/[,\s]+/).map((x) => Number.parseFloat(x));
+    if (parts.length >= 4 && Number.isFinite(parts[2]) && Number.isFinite(parts[3]) && parts[2] > 0 && parts[3] > 0) {
+      return { width: parts[2], height: parts[3] };
+    }
+  }
+
+  const attrWidth = parseNumber(svg.getAttribute('width'));
+  const attrHeight = parseNumber(svg.getAttribute('height'));
+  if (attrWidth && attrHeight) {
+    return { width: attrWidth, height: attrHeight };
+  }
+
+  try {
+    const bbox = svg.getBBox();
+    if (bbox?.width > 0 && bbox?.height > 0) {
+      return { width: bbox.width, height: bbox.height };
+    }
+  } catch (_) {}
+
+  return null;
+}
+
+function applyViewportWidth(container, svg, options) {
+  const mode = options.diagramViewportMode || 'fill';
+
+  if (mode !== 'adaptive') {
+    svg.style.setProperty('width', '100%', 'important');
+    svg.style.setProperty('max-width', '100%', 'important');
+    return;
+  }
+
+  const intrinsic = getSvgIntrinsicSize(svg);
+  if (!intrinsic?.width) {
+    svg.style.setProperty('width', '100%', 'important');
+    svg.style.setProperty('max-width', '100%', 'important');
+    return;
+  }
+
+  const scale = Number.isFinite(options.diagramViewportScale)
+    ? options.diagramViewportScale
+    : 1.25;
+  const minPx = Number.isFinite(options.diagramViewportMinPx)
+    ? options.diagramViewportMinPx
+    : 320;
+  const maxPx = Number.isFinite(options.diagramViewportMaxPx)
+    ? options.diagramViewportMaxPx
+    : 960;
+
+  const parentWidth = container.parentElement?.clientWidth || container.clientWidth || maxPx;
+  const target = intrinsic.width * scale;
+  const widthPx = Math.round(clamp(target, minPx, Math.min(maxPx, parentWidth)));
+
+  container.style.width = `${widthPx}px`;
+  container.style.maxWidth = '100%';
+  container.style.marginInline = 'auto';
+  svg.style.setProperty('width', '100%', 'important');
+  svg.style.setProperty('max-width', '100%', 'important');
+}
+
 function initPanZoom(container, svg, options) {
   if (svg._mermaidPanZoom) return;
 
   svg.style.removeProperty('max-width');
+  svg.style.removeProperty('width');
   svg.style.removeProperty('height');
-  svg.style.setProperty('width', '100%', 'important');
-  svg.style.setProperty('max-width', '100%', 'important');
+
+  applyViewportWidth(container, svg, options);
 
   // Give the container a fixed viewport height so svg-pan-zoom has a
   // well-defined area to fit/center content in.  Small diagrams stay at
@@ -187,12 +263,9 @@ function initPanZoom(container, svg, options) {
     container.style.overflow = 'hidden';
     svg.style.setProperty('height', '100%', 'important');
   } else {
-    const viewBox = svg.getAttribute('viewBox');
-    if (viewBox) {
-      const parts = viewBox.split(/[\s,]+/).map(parseFloat);
-      if (parts.length >= 4 && parts[2] && parts[3]) {
-        svg.style.aspectRatio = `${parts[2]} / ${parts[3]}`;
-      }
+    const intrinsic = getSvgIntrinsicSize(svg);
+    if (intrinsic?.width && intrinsic?.height) {
+      svg.style.aspectRatio = `${intrinsic.width} / ${intrinsic.height}`;
     }
   }
 

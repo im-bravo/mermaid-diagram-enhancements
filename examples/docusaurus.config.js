@@ -38,6 +38,10 @@ const config = {
       // These override the Docusaurus-specific defaults.
       enableInlineWheelZoom: true,
       wheelZoomRequiresCtrl: true,
+      diagramViewportMode: 'adaptive',
+      diagramViewportScale: 1.25,
+      diagramViewportMinPx: 320,
+      diagramViewportMaxPx: 960,
     }],
   ],
 
