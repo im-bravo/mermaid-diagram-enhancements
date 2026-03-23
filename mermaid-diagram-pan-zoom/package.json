@@ -1,6 +1,6 @@
 {
   "name": "mermaid-diagram-pan-zoom",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Framework-agnostic SDK for Mermaid diagram enhancements: pan/zoom, fullscreen, copy, zoom controls",
   "main": "src/index.js",
   "type": "module",

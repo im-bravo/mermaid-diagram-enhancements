@@ -1,6 +1,6 @@
 {
   "name": "docusaurus-plugin-mermaid-pan-zoom",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Zero-config Docusaurus plugin for Mermaid diagram enhancements: pan/zoom, fullscreen, copy, zoom controls",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -17,7 +17,7 @@
     "@docusaurus/theme-mermaid": ">=3.0.0"
   },
   "dependencies": {
-    "mermaid-diagram-pan-zoom": "workspace:*"
+    "mermaid-diagram-pan-zoom": "^1.5.4"
   },
   "keywords": [
     "docusaurus",
