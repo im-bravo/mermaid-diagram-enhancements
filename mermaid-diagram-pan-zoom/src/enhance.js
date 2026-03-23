@@ -111,6 +111,14 @@ function resetContainer(container) {
     try { svg._mermaidPanZoom.destroy(); } catch (_) {}
     svg._mermaidPanZoom = null;
   }
+  if (container._mermaidResizeHandler) {
+    window.removeEventListener('resize', container._mermaidResizeHandler);
+    container._mermaidResizeHandler = null;
+  }
+  if (container._mermaidResizeRaf) {
+    cancelAnimationFrame(container._mermaidResizeRaf);
+    container._mermaidResizeRaf = null;
+  }
   if (container._mermaidWheelZoom) {
     container.removeEventListener('wheel', container._mermaidWheelZoom, { capture: true });
     container._mermaidWheelZoom = null;
@@ -125,6 +133,7 @@ function resetContainer(container) {
   container.style.removeProperty('width');
   container.style.removeProperty('max-width');
   container.style.removeProperty('margin-inline');
+  container.style.removeProperty('aspect-ratio');
 }
 
 function applyEnhancements(container, svg, opts) {
@@ -173,78 +182,6 @@ function enhanceContainer(container, options) {
   applyEnhancements(container, svg, opts);
 }
 
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function parseNumber(value) {
-  if (value === null || value === undefined) return null;
-  const n = Number.parseFloat(String(value));
-  return Number.isFinite(n) ? n : null;
-}
-
-function getSvgIntrinsicSize(svg) {
-  const viewBox = svg.getAttribute('viewBox');
-  if (viewBox) {
-    const parts = viewBox.split(/[,\s]+/).map((x) => Number.parseFloat(x));
-    if (parts.length >= 4 && Number.isFinite(parts[2]) && Number.isFinite(parts[3]) && parts[2] > 0 && parts[3] > 0) {
-      return { width: parts[2], height: parts[3] };
-    }
-  }
-
-  const attrWidth = parseNumber(svg.getAttribute('width'));
-  const attrHeight = parseNumber(svg.getAttribute('height'));
-  if (attrWidth && attrHeight) {
-    return { width: attrWidth, height: attrHeight };
-  }
-
-  try {
-    const bbox = svg.getBBox();
-    if (bbox?.width > 0 && bbox?.height > 0) {
-      return { width: bbox.width, height: bbox.height };
-    }
-  } catch (_) {}
-
-  return null;
-}
-
-function applyViewportWidth(container, svg, options) {
-  const mode = options.diagramViewportMode || 'fill';
-
-  if (mode !== 'adaptive') {
-    svg.style.setProperty('width', '100%', 'important');
-    svg.style.setProperty('max-width', '100%', 'important');
-    return;
-  }
-
-  const intrinsic = getSvgIntrinsicSize(svg);
-  if (!intrinsic?.width) {
-    svg.style.setProperty('width', '100%', 'important');
-    svg.style.setProperty('max-width', '100%', 'important');
-    return;
-  }
-
-  const scale = Number.isFinite(options.diagramViewportScale)
-    ? options.diagramViewportScale
-    : 1.25;
-  const minPx = Number.isFinite(options.diagramViewportMinPx)
-    ? options.diagramViewportMinPx
-    : 320;
-  const maxPx = Number.isFinite(options.diagramViewportMaxPx)
-    ? options.diagramViewportMaxPx
-    : 960;
-
-  const parentWidth = container.parentElement?.clientWidth || container.clientWidth || maxPx;
-  const target = intrinsic.width * scale;
-  const widthPx = Math.round(clamp(target, minPx, Math.min(maxPx, parentWidth)));
-
-  container.style.width = `${widthPx}px`;
-  container.style.maxWidth = '100%';
-  container.style.marginInline = 'auto';
-  svg.style.setProperty('width', '100%', 'important');
-  svg.style.setProperty('max-width', '100%', 'important');
-}
-
 function initPanZoom(container, svg, options) {
   if (svg._mermaidPanZoom) return;
 
@@ -252,20 +189,25 @@ function initPanZoom(container, svg, options) {
   svg.style.removeProperty('width');
   svg.style.removeProperty('height');
 
-  applyViewportWidth(container, svg, options);
-
-  // Give the container a fixed viewport height so svg-pan-zoom has a
-  // well-defined area to fit/center content in.  Small diagrams stay at
-  // natural size (zoom capped at 1 below), tall diagrams are scaled down.
-  // Set to null/undefined to fall back to natural aspect-ratio sizing.
-  if (options.containerHeight) {
-    container.style.height = options.containerHeight;
-    container.style.overflow = 'hidden';
-    svg.style.setProperty('height', '100%', 'important');
+  // Apply aspect-ratio to the container derived from the SVG's viewBox (or
+  // width/height attributes as fallback). This lets CSS drive the container
+  // height proportionally at width:100%, giving svg-pan-zoom a properly-sized
+  // viewport. A min-height in CSS prevents very wide diagrams from collapsing.
+  const viewBox = svg.getAttribute('viewBox');
+  if (viewBox) {
+    const parts = viewBox.trim().split(/[\s,]+/);
+    if (parts.length >= 4) {
+      const vbW = parseFloat(parts[2]);
+      const vbH = parseFloat(parts[3]);
+      if (vbW > 0 && vbH > 0) {
+        container.style.setProperty('aspect-ratio', `${vbW} / ${vbH}`);
+      }
+    }
   } else {
-    const intrinsic = getSvgIntrinsicSize(svg);
-    if (intrinsic?.width && intrinsic?.height) {
-      svg.style.aspectRatio = `${intrinsic.width} / ${intrinsic.height}`;
+    const attrW = parseFloat(svg.getAttribute('width'));
+    const attrH = parseFloat(svg.getAttribute('height'));
+    if (attrW > 0 && attrH > 0) {
+      container.style.setProperty('aspect-ratio', `${attrW} / ${attrH}`);
     }
   }
 
@@ -277,14 +219,23 @@ function initPanZoom(container, svg, options) {
         const instance = svgPanZoom(svg, panZoomOptions);
         svg._mermaidPanZoom = instance;
 
-        // Prevent small diagrams from being scaled up beyond their natural size.
-        // fit:true makes svg-pan-zoom scale content to fill the viewport — for
-        // small diagrams this means enlarging them. Cap the initial zoom at 1
-        // so they stay at natural size, centered in the wider container.
-        if (instance.getZoom() > 1) {
-          instance.zoom(1);
-          instance.center();
-        }
+        // Mirror svg-pan-zoom resize demo behavior.
+        instance.resize();
+        instance.fit();
+        instance.center();
+
+        const handler = () => {
+          if (container._mermaidResizeRaf) cancelAnimationFrame(container._mermaidResizeRaf);
+          container._mermaidResizeRaf = requestAnimationFrame(() => {
+            container._mermaidResizeRaf = null;
+            if (!svg._mermaidPanZoom) return;
+            instance.resize();
+            instance.fit();
+            instance.center();
+          });
+        };
+        window.addEventListener('resize', handler);
+        container._mermaidResizeHandler = handler;
       } catch (e) {
         console.warn('[mermaid-diagram-pan-zoom] svg-pan-zoom init failed:', e);
       }
@@ -534,10 +485,11 @@ function openModal(sourceSvg, options) {
   svgWrapper.appendChild(svgClone);
   content.appendChild(svgWrapper);
 
+  svgClone.removeAttribute('width');
+  svgClone.removeAttribute('height');
   svgClone.style.removeProperty('max-width');
   svgClone.style.removeProperty('width');
-  svgClone.style.setProperty('width', '100%', 'important');
-  svgClone.style.setProperty('max-width', '100%', 'important');
+  svgClone.style.removeProperty('height');
 
   overlay.appendChild(closeBtn);
   overlay.appendChild(content);
@@ -578,6 +530,10 @@ function openModal(sourceSvg, options) {
       try {
         panZoomInstance = svgPanZoom(svgClone, panZoomOptions);
         svgClone._mermaidPanZoom = panZoomInstance;
+        // Keep modal behavior stable regardless of inline sizing/zoom state.
+        panZoomInstance.resize();
+        panZoomInstance.fit();
+        panZoomInstance.center();
         if (opts?.enableZoomControls) {
           addZoomControls(content, svgClone, () => panZoomInstance);
         }
@@ -680,6 +636,14 @@ export function destroy() {
       if (container._mermaidSvgObserver) {
         container._mermaidSvgObserver.disconnect();
         container._mermaidSvgObserver = null;
+      }
+      if (container._mermaidResizeHandler) {
+        window.removeEventListener('resize', container._mermaidResizeHandler);
+        container._mermaidResizeHandler = null;
+      }
+      if (container._mermaidResizeRaf) {
+        cancelAnimationFrame(container._mermaidResizeRaf);
+        container._mermaidResizeRaf = null;
       }
     });
   }
