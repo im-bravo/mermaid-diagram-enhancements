@@ -1,6 +1,7 @@
 {
   "name": "mermaid-pan-zoom-workspace",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "version:patch": "node scripts/prepare-publish.js patch",
     "version:minor": "node scripts/prepare-publish.js minor",
@@ -9,7 +10,8 @@
   },
   "pnpm": {
     "overrides": {
-      "mermaid-diagram-pan-zoom": "workspace:*"
+      "mermaid-diagram-pan-zoom": "workspace:*",
+      "serialize-javascript": ">=7.0.3"
     }
   }
 }
