@@ -15,6 +15,62 @@ let mutationObserver = null;
 let hashchangeHandler = null;
 let currentOptions = null;
 
+function getReactFiberNodeFromElement(element) {
+  if (!element) return null;
+  const keys = Object.keys(element);
+  const fiberKey = keys.find((k) => k.startsWith('__reactFiber$') || k.startsWith('__reactContainer$'));
+  return fiberKey ? element[fiberKey] : null;
+}
+
+function readStringPropFromFiber(fiber) {
+  if (!fiber) return null;
+
+  const propCandidates = [fiber.memoizedProps, fiber.pendingProps];
+  for (const props of propCandidates) {
+    if (!props || typeof props !== 'object') continue;
+
+    // Docusaurus Mermaid renderer passes source as `value`.
+    if (typeof props.value === 'string' && props.value.trim()) return props.value;
+    if (typeof props.text === 'string' && props.text.trim()) return props.text;
+  }
+
+  return null;
+}
+
+function getSourceFromReactFiber(container) {
+  const start = getReactFiberNodeFromElement(container);
+  if (!start) return null;
+
+  let current = start;
+  let depth = 0;
+  while (current && depth < 40) {
+    const source = readStringPropFromFiber(current);
+    if (source) return source;
+    current = current.return;
+    depth += 1;
+  }
+
+  return null;
+}
+
+function getMermaidSource(container, options) {
+  const attributeSource = container.getAttribute(options.sourceAttribute);
+  if (attributeSource) return attributeSource;
+
+  const datasetSource = container.dataset?.mermaidSource || container.dataset?.mermaid;
+  if (datasetSource) return datasetSource;
+
+  // Fallback for Docusaurus theme-mermaid, which renders source in React props
+  // but not as a DOM attribute.
+  const reactSource = getSourceFromReactFiber(container);
+  if (reactSource) {
+    container.setAttribute(options.sourceAttribute, reactSource);
+    return reactSource;
+  }
+
+  return null;
+}
+
 function getIntersectionObserver(options) {
   if (intersectionObserver) return intersectionObserver;
   intersectionObserver = new IntersectionObserver(
@@ -59,6 +115,11 @@ function resetContainer(container) {
     container.removeEventListener('wheel', container._mermaidWheelZoom, { capture: true });
     container._mermaidWheelZoom = null;
   }
+  if (container._mermaidScrollHint) {
+    clearTimeout(container._mermaidScrollHintTimer);
+    container._mermaidScrollHint.remove();
+    container._mermaidScrollHint = null;
+  }
   container.style.removeProperty('height');
   container.style.removeProperty('overflow');
 }
@@ -68,7 +129,7 @@ function applyEnhancements(container, svg, opts) {
   if (opts.enableCopy) addCopyButton(container, opts);
   if (opts.enableExpand) addExpandButton(container, svg, opts);
   if (opts.enableZoomControls) addZoomControls(container, svg);
-  if (opts.enableInlineWheelZoom) addWheelZoomHandler(container, svg);
+  if (opts.enableInlineWheelZoom) addWheelZoomHandler(container, svg, opts.wheelZoomRequiresCtrl);
   container.setAttribute(ENHANCED_ATTR, 'true');
   container.classList.add(ENHANCED_CLASS);
 
@@ -178,7 +239,7 @@ function addExpandButton(container, svg, options) {
 function addCopyButton(container, options) {
   if (container.querySelector('.mermaid-copy-btn')) return;
 
-  const source = container.getAttribute(options.sourceAttribute);
+  const source = getMermaidSource(container, options);
   if (!source) return;
 
   const copyIcon =
@@ -214,7 +275,35 @@ function addCopyButton(container, options) {
   container.insertBefore(btn, container.firstChild);
 }
 
-function addWheelZoomHandler(container, svg) {
+function getOrCreateScrollHint(container) {
+  let hint = container._mermaidScrollHint;
+  if (hint) return hint;
+
+  const label = 'Ctrl + scroll to zoom (⌘ on Mac)';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'mermaid-scroll-hint';
+  const msg = document.createElement('div');
+  msg.className = 'mermaid-scroll-hint__msg';
+  msg.textContent = label;
+  overlay.appendChild(msg);
+  container.appendChild(overlay);
+
+  container._mermaidScrollHint = overlay;
+  return overlay;
+}
+
+function showScrollHint(container) {
+  const overlay = getOrCreateScrollHint(container);
+  overlay.classList.add('mermaid-scroll-hint--visible');
+
+  clearTimeout(container._mermaidScrollHintTimer);
+  container._mermaidScrollHintTimer = setTimeout(() => {
+    overlay.classList.remove('mermaid-scroll-hint--visible');
+  }, 700);
+}
+
+function addWheelZoomHandler(container, svg, requireCtrl = false) {
   if (container._mermaidWheelZoom) return;
 
   let lastWheelZoomTime = 0;
@@ -225,6 +314,14 @@ function addWheelZoomHandler(container, svg) {
 
     const dy = evt.deltaY ?? 0;
     if (dy === 0) return;
+
+    // When requireCtrl is true, only zoom when a modifier key is held.
+    // Mac: Cmd (metaKey) or trackpad pinch (sets ctrlKey=true by browser).
+    // Win/Linux: Ctrl key (ctrlKey).
+    if (requireCtrl && !evt.ctrlKey && !evt.metaKey) {
+      showScrollHint(container);
+      return;
+    }
 
     evt.preventDefault();
     evt.stopPropagation();

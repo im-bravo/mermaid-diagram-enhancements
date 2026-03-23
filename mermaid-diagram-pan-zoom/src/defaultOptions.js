@@ -9,8 +9,9 @@ export const DEFAULT_OPTIONS = {
   enableExpand: true,
   enableZoomControls: true,
   enableWheelZoom: true,
-  enableInlineWheelZoom: false,
-  containerHeight: '620px',
+  enableInlineWheelZoom: true,
+  wheelZoomRequiresCtrl: true,
+  containerHeight: null,
   enhancedAttr: 'data-mermaid-enhanced',
   enhancedClass: 'mermaid-diagram-enhanced',
   panZoomOptions: {

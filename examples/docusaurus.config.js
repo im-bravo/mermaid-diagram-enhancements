@@ -36,8 +36,8 @@ const config = {
     ['docusaurus-plugin-mermaid-pan-zoom', {
       // All options from mermaid-diagram-pan-zoom are supported here.
       // These override the Docusaurus-specific defaults.
-      containerHeight: '660px',
-      enableInlineWheelZoom: false,
+      enableInlineWheelZoom: true,
+      wheelZoomRequiresCtrl: true,
     }],
   ],
 
@@ -53,6 +53,11 @@ const config = {
             position: 'right',
           },
         ],
+      },
+      docs: {
+        sidebar: {
+          hideable: true
+        },
       },
       mermaid: {
         theme: { light: 'default', dark: 'dark' },

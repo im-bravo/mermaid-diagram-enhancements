@@ -181,6 +181,34 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
+/* Scroll-to-zoom hint (shown when user scrolls without modifier key) */
+.mermaid-scroll-hint {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10010;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.mermaid-scroll-hint--visible {
+  opacity: 1;
+}
+
+.mermaid-scroll-hint__msg {
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  font-family: var(--ifm-font-family-base, system-ui, sans-serif);
+  letter-spacing: 0.01em;
+  user-select: none;
+  white-space: nowrap;
+}
+
 [data-theme='dark'] {
   --ifm-color-mermaid-rect: #54524b;
   --ifm-color-mermaid-rect-note: #262625;
