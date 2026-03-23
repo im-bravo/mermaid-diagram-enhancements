@@ -38,6 +38,7 @@ const config = {
       // These override the Docusaurus-specific defaults.
       enableInlineWheelZoom: true,
       wheelZoomRequiresCtrl: true,
+      intrinsicHeightScale: 1.2,
     }],
   ],
 

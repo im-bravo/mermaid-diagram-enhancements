@@ -12,6 +12,7 @@ export const DEFAULT_OPTIONS = {
   enableInlineWheelZoom: true,
   wheelZoomRequiresCtrl: true,
   containerHeight: null,
+  intrinsicHeightScale: 1.2,
   enhancedAttr: 'data-mermaid-enhanced',
   enhancedClass: 'mermaid-diagram-enhanced',
   panZoomOptions: {

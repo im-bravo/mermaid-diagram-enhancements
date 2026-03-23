@@ -132,6 +132,7 @@ function resetContainer(container) {
   container.style.removeProperty('overflow');
   container.style.removeProperty('width');
   container.style.removeProperty('max-width');
+  container.style.removeProperty('max-height');
   container.style.removeProperty('margin-inline');
   container.style.removeProperty('aspect-ratio');
 }
@@ -189,26 +190,29 @@ function initPanZoom(container, svg, options) {
   svg.style.removeProperty('width');
   svg.style.removeProperty('height');
 
-  // Apply aspect-ratio to the container derived from the SVG's viewBox (or
-  // width/height attributes as fallback). This lets CSS drive the container
-  // height proportionally at width:100%, giving svg-pan-zoom a properly-sized
-  // viewport. A min-height in CSS prevents very wide diagrams from collapsing.
+  // Derive the SVG's intrinsic size from viewBox (preferred) or width/height attributes.
+  // Use it to:
+  //   1. Set aspect-ratio on the container so CSS drives height responsively.
+  //   2. Cap max-height at 1.1× the intrinsic height so tall/narrow diagrams
+  //      don't grow beyond their natural size when the container is very wide.
+  let intrinsicW = 0;
+  let intrinsicH = 0;
   const viewBox = svg.getAttribute('viewBox');
   if (viewBox) {
     const parts = viewBox.trim().split(/[\s,]+/);
     if (parts.length >= 4) {
-      const vbW = parseFloat(parts[2]);
-      const vbH = parseFloat(parts[3]);
-      if (vbW > 0 && vbH > 0) {
-        container.style.setProperty('aspect-ratio', `${vbW} / ${vbH}`);
-      }
+      intrinsicW = parseFloat(parts[2]);
+      intrinsicH = parseFloat(parts[3]);
     }
-  } else {
-    const attrW = parseFloat(svg.getAttribute('width'));
-    const attrH = parseFloat(svg.getAttribute('height'));
-    if (attrW > 0 && attrH > 0) {
-      container.style.setProperty('aspect-ratio', `${attrW} / ${attrH}`);
-    }
+  }
+  if (!(intrinsicW > 0 && intrinsicH > 0)) {
+    intrinsicW = parseFloat(svg.getAttribute('width'));
+    intrinsicH = parseFloat(svg.getAttribute('height'));
+  }
+  if (intrinsicW > 0 && intrinsicH > 0) {
+    container.style.setProperty('aspect-ratio', `${intrinsicW} / ${intrinsicH}`);
+    const scale = options.intrinsicHeightScale ?? 1.1;
+    container.style.setProperty('max-height', `${Math.round(intrinsicH * scale)}px`);
   }
 
   const panZoomOptions = { ...options.panZoomOptions };
