@@ -61,16 +61,20 @@ function replace(newVersion) {
   writeJson(SDK_PATH, sdkPkg);
   console.log(`  ✓ mermaid-diagram-pan-zoom → ${newVersion}`);
 
-  // 2. Bump plugin version and replace workspace:* with real version
+  // 2. Bump plugin version and refresh workspace package deps to real version
   const pluginPkg = readJson(PLUGIN_PATH);
   pluginPkg.version = newVersion;
 
   for (const section of ['dependencies', 'devDependencies', 'peerDependencies']) {
     if (!pluginPkg[section]) continue;
     for (const name of WORKSPACE_PACKAGES) {
-      if (pluginPkg[section][name] === 'workspace:*') {
+      const current = pluginPkg[section][name];
+      if (!current || current.startsWith('file:')) continue;
+
+      const next = `^${newVersion}`;
+      if (current !== next) {
         pluginPkg[section][name] = `^${newVersion}`;
-        console.log(`  ✓ docusaurus-plugin: ${name}: workspace:* → ^${newVersion}`);
+        console.log(`  ✓ docusaurus-plugin: ${name}: ${current} → ^${newVersion}`);
       }
     }
   }

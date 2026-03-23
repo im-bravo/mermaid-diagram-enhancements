@@ -47,6 +47,25 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Wait for SDK version to be available on npm
+        run: |
+          VERSION="${{ steps.tag_version.outputs.version }}"
+          PKG="mermaid-diagram-pan-zoom"
+
+          echo "Waiting for ${PKG}@${VERSION} to appear on npm..."
+          for i in {1..30}; do
+            if npm view "${PKG}@${VERSION}" version >/dev/null 2>&1; then
+              echo "${PKG}@${VERSION} is now available."
+              exit 0
+            fi
+
+            echo "Attempt ${i}/30: not available yet, retry in 10s..."
+            sleep 10
+          done
+
+          echo "Timed out waiting for ${PKG}@${VERSION} to propagate on npm."
+          exit 1
+
       - name: Install plugin dependencies (with real SDK version)
         run: npm install
         working-directory: docusaurus-plugin-mermaid-pan-zoom
