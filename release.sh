@@ -112,18 +112,11 @@ main() {
     exit 1
   fi
 
-  # Determine new version
+  # Log requested version action; actual update happens once below.
   if [[ "$VERSION_INPUT" =~ ^(patch|minor|major)$ ]]; then
     log_info "Bumping version (${YELLOW}$VERSION_INPUT${NC})..."
-    NEW_VERSION=$(node "$ROOT_DIR/scripts/prepare-publish.js" "$VERSION_INPUT" 2>&1 | grep "Ready to publish" | sed 's/.*v\(.*\)\./\1/')
   else
-    NEW_VERSION="$VERSION_INPUT"
-    log_info "Setting version to ${YELLOW}v${NEW_VERSION}${NC}..."
-  fi
-
-  # Re-extract new version to be sure
-  if [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[\w.]+)?$ ]]; then
-    NEW_VERSION="$VERSION_INPUT"
+    log_info "Setting version to ${YELLOW}v${VERSION_INPUT}${NC}..."
   fi
 
   echo
