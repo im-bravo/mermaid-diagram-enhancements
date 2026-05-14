@@ -4,8 +4,8 @@ Add practical interaction features to Mermaid diagrams: pan, wheel zoom, fullscr
 
 This repository provides two publishable packages:
 
-- [`docusaurus-plugin-mermaid-pan-zoom`](./docusaurus-plugin-mermaid-pan-zoom): Recommended for Docusaurus users, zero-config setup.
-- [`mermaid-diagram-pan-zoom`](./mermaid-diagram-pan-zoom): Framework-agnostic SDK for VitePress or custom integrations.
+- [`docusaurus-plugin-mermaid-pan-zoom`](./docusaurus-plugin-mermaid-pan-zoom) ([npm](https://www.npmjs.com/package/docusaurus-plugin-mermaid-pan-zoom)): Recommended for Docusaurus users, zero-config setup.
+- [`mermaid-diagram-pan-zoom`](./mermaid-diagram-pan-zoom) ([npm](https://www.npmjs.com/package/mermaid-diagram-pan-zoom)): Framework-agnostic SDK for VitePress or custom integrations.
 
 ## Which One Should You Use
 
