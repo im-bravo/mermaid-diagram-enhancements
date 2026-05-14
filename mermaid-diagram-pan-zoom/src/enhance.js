@@ -183,6 +183,74 @@ function enhanceContainer(container, options) {
   applyEnhancements(container, svg, opts);
 }
 
+function isElementRenderable(element) {
+  if (!element?.isConnected || typeof element.getBoundingClientRect !== 'function') return false;
+
+  const rect = element.getBoundingClientRect();
+  if (!(rect.width > 0 && rect.height > 0)) return false;
+
+  if (typeof window !== 'undefined' && window.getComputedStyle) {
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+  }
+
+  return true;
+}
+
+function hasInvertibleScreenCtm(svg) {
+  if (typeof svg?.getScreenCTM !== 'function') return true;
+
+  try {
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return false;
+
+    const determinant = matrix.a * matrix.d - matrix.b * matrix.c;
+    return Number.isFinite(determinant) && Math.abs(determinant) > Number.EPSILON;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isTransientPanZoomLayoutError(error) {
+  const message = error?.message || '';
+  return (
+    error?.name === 'InvalidStateError' ||
+    (message.includes('inverse') && message.includes('not invertible')) ||
+    message.includes('matrix is not invertible')
+  );
+}
+
+function syncPanZoomToLayout(instance, svg, container) {
+  if (!isElementRenderable(container) || !isElementRenderable(svg) || !hasInvertibleScreenCtm(svg)) {
+    return false;
+  }
+
+  try {
+    instance.resize();
+    instance.fit();
+    instance.center();
+    return true;
+  } catch (e) {
+    if (!isTransientPanZoomLayoutError(e)) {
+      console.warn('[mermaid-diagram-pan-zoom] svg-pan-zoom layout sync failed:', e);
+    }
+    return false;
+  }
+}
+
+function schedulePanZoomSync(container, svg, instance, retries = 2) {
+  if (container._mermaidResizeRaf) cancelAnimationFrame(container._mermaidResizeRaf);
+  container._mermaidResizeRaf = requestAnimationFrame(() => {
+    container._mermaidResizeRaf = null;
+    if (!svg._mermaidPanZoom) return;
+
+    const didSync = syncPanZoomToLayout(instance, svg, container);
+    if (!didSync && retries > 0 && svg._mermaidPanZoom) {
+      schedulePanZoomSync(container, svg, instance, retries - 1);
+    }
+  });
+}
+
 function initPanZoom(container, svg, options) {
   if (svg._mermaidPanZoom) return;
 
@@ -223,20 +291,11 @@ function initPanZoom(container, svg, options) {
         const instance = svgPanZoom(svg, panZoomOptions);
         svg._mermaidPanZoom = instance;
 
-        // Mirror svg-pan-zoom resize demo behavior.
-        instance.resize();
-        instance.fit();
-        instance.center();
+        // Mirror svg-pan-zoom resize demo behavior once layout is measurable.
+        schedulePanZoomSync(container, svg, instance);
 
         const handler = () => {
-          if (container._mermaidResizeRaf) cancelAnimationFrame(container._mermaidResizeRaf);
-          container._mermaidResizeRaf = requestAnimationFrame(() => {
-            container._mermaidResizeRaf = null;
-            if (!svg._mermaidPanZoom) return;
-            instance.resize();
-            instance.fit();
-            instance.center();
-          });
+          schedulePanZoomSync(container, svg, instance);
         };
         window.addEventListener('resize', handler);
         container._mermaidResizeHandler = handler;
@@ -535,9 +594,7 @@ function openModal(sourceSvg, options) {
         panZoomInstance = svgPanZoom(svgClone, panZoomOptions);
         svgClone._mermaidPanZoom = panZoomInstance;
         // Keep modal behavior stable regardless of inline sizing/zoom state.
-        panZoomInstance.resize();
-        panZoomInstance.fit();
-        panZoomInstance.center();
+        schedulePanZoomSync(content, svgClone, panZoomInstance);
         if (opts?.enableZoomControls) {
           addZoomControls(content, svgClone, () => panZoomInstance);
         }
