@@ -17,7 +17,7 @@
     "@docusaurus/theme-mermaid": ">=3.0.0"
   },
   "dependencies": {
-    "mermaid-diagram-pan-zoom": "workspace:*"
+    "mermaid-diagram-pan-zoom": "^1.7.0"
   },
   "keywords": [
     "docusaurus",
