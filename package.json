@@ -9,11 +9,5 @@
     "version:restore": "node scripts/prepare-publish.js --restore",
     "dev": "pnpm --filter mermaid-pan-zoom-example dev",
     "build": "pnpm -r build"
-  },
-  "pnpm": {
-    "overrides": {
-      "mermaid-diagram-pan-zoom": "workspace:*",
-      "serialize-javascript": ">=7.0.3"
-    }
   }
 }

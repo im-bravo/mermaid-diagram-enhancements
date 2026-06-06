@@ -4,3 +4,6 @@ packages:
   - 'examples'
 allowBuilds:
   core-js: false
+overrides:
+  mermaid-diagram-pan-zoom: 'workspace:*'
+  serialize-javascript: '>=7.0.3'
