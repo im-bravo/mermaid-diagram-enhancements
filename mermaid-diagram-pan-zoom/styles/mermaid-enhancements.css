@@ -168,10 +168,10 @@
   width: 40px;
   height: 40px;
   padding: 0;
-  border: none;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.75);
+  color: #000;
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
@@ -182,7 +182,7 @@
 }
 
 .mermaid-modal-close:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* Scroll-to-zoom hint (shown when user scrolls without modifier key) */

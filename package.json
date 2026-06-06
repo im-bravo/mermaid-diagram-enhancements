@@ -6,7 +6,9 @@
     "version:patch": "node scripts/prepare-publish.js patch",
     "version:minor": "node scripts/prepare-publish.js minor",
     "version:major": "node scripts/prepare-publish.js major",
-    "version:restore": "node scripts/prepare-publish.js --restore"
+    "version:restore": "node scripts/prepare-publish.js --restore",
+    "dev": "pnpm --filter mermaid-pan-zoom-example dev",
+    "build": "pnpm -r build"
   },
   "pnpm": {
     "overrides": {
