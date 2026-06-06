@@ -57,6 +57,8 @@ jobs:
         run: pnpm build
         env:
           NODE_OPTIONS: --no-deprecation
+          DOCUSAURUS_URL: https://im-bravo.github.io
+          DOCUSAURUS_BASE_URL: /mermaid-diagram-enhancements/
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
