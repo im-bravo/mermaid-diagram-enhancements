@@ -142,7 +142,7 @@ function applyEnhancements(container, svg, opts) {
   if (opts.enableCopy) addCopyButton(container, opts);
   if (opts.enableExpand) addExpandButton(container, svg, opts);
   if (opts.enableZoomControls) addZoomControls(container, svg);
-  if (opts.enableInlineWheelZoom) addWheelZoomHandler(container, svg, opts.wheelZoomRequiresCtrl);
+  if (opts.enableInlineWheelZoom) addWheelZoomHandler(container, svg, opts.wheelZoomRequiresCtrl, opts.wheelZoomSensitivity);
   container.setAttribute(ENHANCED_ATTR, 'true');
   container.classList.add(ENHANCED_CLASS);
 
@@ -390,7 +390,7 @@ function showScrollHint(container) {
   }, 700);
 }
 
-function addWheelZoomHandler(container, svg, requireCtrl = false) {
+function addWheelZoomHandler(container, svg, requireCtrl = false, sensitivity = 0.05) {
   if (container._mermaidWheelZoom) return;
 
   let lastWheelZoomTime = 0;
@@ -413,7 +413,6 @@ function addWheelZoomHandler(container, svg, requireCtrl = false) {
     evt.preventDefault();
     evt.stopPropagation();
 
-    const sensitivity = 0.12;
     const timeDelta = Date.now() - lastWheelZoomTime;
     lastWheelZoomTime = Date.now();
     const divider = 3 + Math.max(0, 30 - timeDelta);
@@ -599,7 +598,8 @@ function openModal(sourceSvg, options) {
           addZoomControls(content, svgClone, () => panZoomInstance);
         }
         if (opts?.enableWheelZoom) {
-          addWheelZoomHandler(content, svgClone);
+          // In modal/fullscreen mode, always allow free scroll-to-zoom without Ctrl.
+          addWheelZoomHandler(content, svgClone, false, opts?.wheelZoomSensitivity);
         }
       } catch (e) {
         console.warn('[mermaid-diagram-pan-zoom] modal svg-pan-zoom init failed:', e);

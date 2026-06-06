@@ -40,6 +40,21 @@ const config = {
       wheelZoomRequiresCtrl: true,
       intrinsicHeightScale: 1.2,
     }],
+    // Watch workspace source packages for hot-reload during development.
+    function workspaceWatchPlugin(_context, _options) {
+      return {
+        name: 'workspace-watch-plugin',
+        configureWebpack(_config, isServer) {
+          if (isServer) return {};
+          return {
+            snapshot: {
+              // Disable managedPaths so webpack watches symlinked workspace packages.
+              managedPaths: [],
+            },
+          };
+        },
+      };
+    },
   ],
 
   themeConfig:

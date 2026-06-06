@@ -11,6 +11,7 @@ export const DEFAULT_OPTIONS = {
   enableWheelZoom: true,
   enableInlineWheelZoom: true,
   wheelZoomRequiresCtrl: true,
+  wheelZoomSensitivity: 0.05,
   containerHeight: null,
   intrinsicHeightScale: 1.2,
   enhancedAttr: 'data-mermaid-enhanced',
