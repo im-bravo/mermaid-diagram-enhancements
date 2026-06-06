@@ -2,8 +2,8 @@
 const config = {
   title: 'mermaid-diagram-pan-zoom',
   tagline: 'SDK Feature Verification',
-  url: 'http://localhost',
-  baseUrl: '/',
+  url: process.env.DOCUSAURUS_URL || 'http://localhost',
+  baseUrl: process.env.DOCUSAURUS_BASE_URL || '/',
   onBrokenLinks: 'throw',
   favicon: 'img/favicon.ico',
 
