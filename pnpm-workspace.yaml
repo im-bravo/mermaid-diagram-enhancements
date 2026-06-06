@@ -2,3 +2,5 @@ packages:
   - 'mermaid-diagram-pan-zoom'
   - 'docusaurus-plugin-mermaid-pan-zoom'
   - 'examples'
+allowBuilds:
+  core-js: false
