@@ -121,10 +121,11 @@ All available options with their defaults and descriptions.
 | `enableExpand` | `boolean` | `true` | Show the **fullscreen expand** button on diagrams |
 | `enableZoomControls` | `boolean` | `true` | Show the **3×3 pan/zoom control grid** (GitHub-style) |
 | `enableWheelZoom` | `boolean` | `true` | Enable **mouse wheel zoom** inside the fullscreen modal |
-| `enableInlineWheelZoom` | `boolean` | `false` | Enable **mouse wheel zoom** on inline (non-modal) diagrams. Disabled by default to avoid blocking page scroll. |
-| `wheelZoomRequiresCtrl` | `boolean` | `false` | When `true`, the user must hold the `Ctrl`/`Cmd` key to wheel-zoom. When `false`, scrolling always zooms (in modal or inline). |
-| `intrinsicHeightScale` | `number` | `1.0` | Adjust the computed intrinsic height of diagram SVGs. Increase (e.g. `1.2`) to give tall diagrams more room, decrease to compress them. |
-| `panZoomOptions` | `object` | `{}` | Additional options passed directly to [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom). Overrides any SDK defaults. |
+| `enableInlineWheelZoom` | `boolean` | `true` | Enable **mouse wheel zoom** on inline (non-modal) diagrams. |
+| `wheelZoomRequiresCtrl` | `boolean` | `true` | When `true`, the user must hold the `Ctrl`/`Cmd` key to wheel-zoom inline diagrams. When `false`, scrolling always zooms. (In the fullscreen modal, wheel zoom is always free.) |
+| `wheelZoomSensitivity` | `number` | `0.05` | Controls how sensitive the wheel zoom is. Lower values = slower zoom, higher = faster. |
+| `intrinsicHeightScale` | `number` | `1.2` | Adjust the computed intrinsic height of diagram SVGs. Increase (e.g. `1.5`) to give tall diagrams more room, decrease to compress them. |
+| `panZoomOptions` | `object` | `{}` | Additional options passed directly to [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom). See [panZoomOptions breakdown](#panzoomoptions) below. |
 
 ### Docusaurus Plugin Options
 
@@ -140,27 +141,62 @@ plugins: [
 ],
 ```
 
-The plugin accepts all SDK options listed above. Its Docusaurus-specific defaults differ slightly:
+The plugin accepts **all SDK options** listed above. Docusaurus-specific defaults are the same as the SDK defaults shown above — no surprises.
 
-| Option | Plugin Default | SDK Default | Notes |
-|--------|---------------|-------------|-------|
-| `enableInlineWheelZoom` | `true` | `false` | The plugin ships with inline wheel zoom enabled |
-| `wheelZoomRequiresCtrl` | `true` | `false` | Ctrl/Cmd key required for wheel zoom by default |
-| `intrinsicHeightScale` | `1.2` | `1.0` | Slightly taller default to prevent cropping |
+### panZoomOptions
+
+Fine-tune the underlying [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom) instance. These override the SDK's internal defaults:
+
+| Option | SDK Default | Description |
+|--------|-------------|-------------|
+| `panZoomOptions.zoomEnabled` | `true` | Enable zooming |
+| `panZoomOptions.panEnabled` | `true` | Enable panning |
+| `panZoomOptions.controlIconsEnabled` | `false` | svg-pan-zoom's built-in controls (SDK provides its own) |
+| `panZoomOptions.fit` | `true` | Fit diagram to container on init |
+| `panZoomOptions.center` | `true` | Center diagram on init |
+| `panZoomOptions.mouseWheelZoomEnabled` | `false` | svg-pan-zoom's built-in wheel zoom (SDK uses a custom handler) |
+| `panZoomOptions.dblClickZoomEnabled` | `true` | Double-click to zoom |
+| `panZoomOptions.minZoom` | `0.2` | Minimum zoom level |
+| `panZoomOptions.maxZoom` | `10` | Maximum zoom level |
+| `panZoomOptions.zoomScaleSensitivity` | `0.1` | Zoom step sensitivity |
+| `panZoomOptions.refreshRate` | `60` | Animation refresh rate (fps) |
 
 ---
 
 ## Features
 
-| Feature | Description | Icon |
-|---------|-------------|------|
-| **Pan & Zoom** | Drag to pan, scroll to zoom. Smooth interactions powered by [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom). | 🔍 |
-| **Zoom Controls** | GitHub-style 3×3 button grid: up/down/left/right pan, zoom in/out, and reset. | 🎮 |
-| **Fullscreen Modal** | Click the expand button to view any diagram in a fullscreen overlay. Press `Escape` or click the backdrop to close. | 🖥️ |
-| **Copy Source** | Click the copy button to copy the Mermaid source code to your clipboard. | 📋 |
-| **Auto-Enhance** | When used with the Docusaurus plugin, diagrams are automatically enhanced after SPA route changes. No manual calls needed. | 🔄 |
-| **Dark Mode** | Automatically adapts diagram theme when toggling dark/light mode. | 🌓 |
-| **Framework-Agnostic** | Works with Docusaurus, VitePress, or any plain HTML page. | 🧩 |
+### User-Facing Features
+
+| Feature | Description | Config |
+|---------|-------------|--------|
+| **Pan & Zoom** | Drag to pan, scroll to zoom. Smooth interactions powered by [svg-pan-zoom](https://github.com/bumbu/svg-pan-zoom). | `panZoomOptions` |
+| **Inline Wheel Zoom** | Mouse wheel zoom directly on inline diagrams. Smooth, viewport-centered logarithmic zoom with cross-browser delta normalization. | `enableInlineWheelZoom`, `wheelZoomRequiresCtrl`, `wheelZoomSensitivity` |
+| **Ctrl+Scroll Hint** | When `wheelZoomRequiresCtrl` is enabled, a toast overlay appears on first scroll: *"Ctrl + scroll to zoom (⌘ on Mac)"*. Fades out after 700ms. | automatic |
+| **Zoom Controls** | GitHub-style 3×3 button grid: up/down/left/right pan (animated, 10 steps over ~120ms), zoom in/out, and reset. | `enableZoomControls` |
+| **Fullscreen Modal** | Click the expand button to view any diagram in a fullscreen overlay. Wheel zoom is always free in the modal (no Ctrl required). Press `Escape` or click the backdrop to close. | `enableExpand` |
+| **Copy Source** | Click the copy button to copy the Mermaid source code to clipboard with visual checkmark feedback (1.5s). Resolves source from DOM attributes or React Fiber tree. | `enableCopy`, `sourceAttribute` |
+| **Dark Mode** | CSS adjusts diagram fill colors under `[data-theme='dark']` for proper rendering in dark themes. | automatic |
+
+### Automatic Behaviors (Zero-Config)
+
+| Behavior | What It Does |
+|----------|-------------|
+| **Lazy Enhancement** | Uses `IntersectionObserver` to only enhance diagrams when they approach the viewport (`rootMargin: 50px`). Saves resources on pages with many off-screen diagrams. |
+| **Auto-Discovery** | A `MutationObserver` on `document.body` watches for new diagram containers added to the DOM. Rate-limited via `requestAnimationFrame`. |
+| **SVG Re-render Detection** | A per-container `MutationObserver` detects when Mermaid replaces the SVG (e.g., on dark/light theme toggle) and automatically re-applies all enhancements to the new SVG. |
+| **Window Resize Sync** | Each container listens for `window.resize`, validates the SVG is renderable, and calls `fit()` + `center()` to keep the diagram correctly sized. Retries up to 2 times on transient failures. |
+| **SPA Route Changes** | Listens for `hashchange` events and re-scans for new diagrams. The Docusaurus plugin also hooks into `onRouteDidUpdate` for history-based routing. |
+| **Staggered Init** | Initial `enhance()` calls are staggered at 100ms, 500ms, 1500ms, and 3000ms to give Mermaid time to finish rendering before enhancements are applied. |
+| **Async Load** | `svg-pan-zoom` is loaded via dynamic `import()` — no blocking bundle cost until a diagram is actually enhanced. |
+| **React Fiber Fallback** | If the Mermaid source isn't found in a DOM attribute, the SDK walks up the React Fiber tree looking for `memoizedProps.value` — specific compatibility with Docusaurus theme-mermaid internals. |
+
+### API
+
+| Function | Description |
+|----------|-------------|
+| `init(options?)` | Initializes the SDK with optional configuration. Calls `enhance()` internally with staggered timing. |
+| `enhance()` | Re-scans the DOM for new containers and feeds them into the intersection observer. Call after SPA route changes. |
+| `destroy()` | Cleans up all observers (`MutationObserver`, `IntersectionObserver`), event listeners (`hashchange`, `resize`), and per-container bookkeeping. Resets internal state. |
 
 ---
 
